@@ -1,0 +1,146 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using UnityEngine;
+using UnityEngine.UI;
+using Random = UnityEngine.Random;
+
+public class GameManager : MonoBehaviour
+{
+    public delegate void SendUpdateUI();
+    public static event SendUpdateUI onSendUpdateUI;
+
+    public delegate void SendSetupEvent();
+    public static event SendSetupEvent onSendSetupEvent;
+
+    int health;
+    int maxHealth; 
+    int food;
+    int maxFood;
+    int day;
+    int actions;
+    int money;
+
+    public Text HealthText;
+    public Text FoodText;
+    public Text DayText;
+    public Text ActionsText;
+    public Text MoneyText;
+
+    public GameObject MessagePanel;
+    public Text MessageText;
+
+    public GameObject DeathPanel;
+
+    public Slider HealthSlider;
+    public Slider FoodSlider;
+
+    public void DisplayMessage(string value)
+    {
+        MessageText.text = value;
+        MessagePanel.SetActive(true);
+        Invoke("HideMessage", 2);
+    }
+
+    public void HideMessage()
+    {
+        MessagePanel.SetActive(false);
+    }
+
+    public void AddToHealth(int value)
+    {
+        health += value;
+        if (health > maxHealth)
+        {
+            health = maxHealth;
+        }
+    }
+
+    public void AddToFood(int value)
+    {
+        food += value;
+        if (food > maxFood)
+        {
+            food = maxFood;
+        } 
+    }
+
+    public bool BuyItem(int value)
+    {
+        if (money + value < 0)
+        {
+            DisplayMessage("Not Enough Money");
+            return false;
+        }
+        money += value;
+        return true;
+    }
+
+    public void UpdateUI()
+    {
+        CheckForDeath();
+
+        if (onSendUpdateUI != null)
+        {
+            onSendUpdateUI();
+        }
+
+        day++;
+        HealthText.text = "Health: " + health;
+        FoodText.text = "Food: " + food;
+        DayText.text = "Day: " + day;
+        ActionsText.text = "Actions: " + actions;
+        MoneyText.text = "Money: " + money;
+
+        HealthSlider.value = health;
+        FoodSlider.value = food;
+    }
+
+    void CheckForDeath()
+    {
+        if (health <= 0 || food <= 0)
+        {
+            YouDied();
+        }
+    }
+
+    public void YouDied()
+    {
+        DeathPanel.SetActive(true);
+    }
+
+    public void SetupGame()
+    {
+        MessagePanel.SetActive(false);
+        DeathPanel.SetActive(false);
+
+        maxHealth = 100;
+        maxFood = 100;
+
+        health = maxHealth;
+        HealthSlider.maxValue = maxHealth;
+        food = maxFood;
+        FoodSlider.maxValue = maxFood;
+
+        day = 1;
+        actions = 5;
+        money = 0;
+        if (onSendUpdateUI != null)
+        {
+            onSendSetupEvent();
+        }
+
+        UpdateUI();
+    }
+
+    void Start()
+    {
+        SetupGame();
+    }
+
+    void Update()
+    {
+        
+    }
+}
