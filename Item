@@ -1,0 +1,113 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using UnityEngine;
+using UnityEngine.UI;
+using Random = UnityEngine.Random;
+
+public class Item : MonoBehaviour
+{
+    public GameManager GM;
+
+    public int addToFood;
+    public int addToHealth;
+    public int addToMoney;
+    public int rentalDays;
+    int rentalDaysRemaining;
+    public bool purchased;
+    public bool oneTimePurchase;
+    public string itemDescription;
+    private string requirementString; // Temporarily used to keep track of the requirements that were failed in CheckRequirements 
+
+    
+
+    public Text ItemDescriptionText;
+    public Text ItemCostText;
+
+    public List<Item> Requirements;
+    
+    private void OnEnable()
+    {
+        GameManager.onSendUpdateUI += UpdateItem;
+        GameManager.OnSendSetupEvent += SetupItem;
+    }
+
+    private void OnDisable()
+    {
+        GameManager.onSendUpdateUI -= UpdateItem;
+        GameManager.OnSendSetupEvent -= SetupItem;
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        GM = GameObject.Find("GameManager").GetComponent<GameManager>();
+        ItemDescriptionText.text = itemDescription;
+        ItemCostText.text = addToMoney.ToString();
+    }
+
+    void SetupItem()
+    {
+        purchased = false;
+    }
+    void UpdateItem()
+    {
+        if (rentalDays > 0 && purchased)
+        {
+            rentalDaysRemaining -= 1;
+            if (rentalDaysRemaining == 0)
+            {
+                purchased = false;
+            }
+
+        }
+    }
+
+    public bool CheckRequirements()
+    {
+        // Assuming requirements will pass
+        bool passedRequirements = true;
+        requirementString = "Requirements: ";
+        string comma = "";
+        foreach (Item currentItem in Requirements)
+        {
+            if (!currentItem.purchased)
+            {
+                passedRequirements = false;
+                requirementString += comma + currentItem.itemDescription;
+                comma = ", ";
+            }
+        }
+        return passedRequirements;
+    }
+
+    public void ProcessItem()
+    {
+        if (oneTimePurchase && purchased)
+        {
+            GM.DisplayMessage("Item already purchased!");
+            return;
+        }
+        if (!CheckRequirements())
+        {
+            GM.DisplayMessage("You don't meet all the requirements. " + requirementString);
+            return;
+        }
+        if (GM.BuyItem(addToMoney))
+        {
+            GM.AddToHealth(addToHealth);
+            GM.AddToFood(addToFood);
+            purchased = true;
+            if (rentalDays > 0)
+            {
+                rentalDaysRemaining = rentalDays;
+            }
+            GM.UpdateUI();
+        }
+        else
+        {
+            GM.DisplayMessage("You don't have enough money");
+        }
+    }
+}
